@@ -1,0 +1,14 @@
+{
+  "name": "2daymind/asesor-ia",
+  "description": "Asesor IA de Mercado - 2DayMind",
+  "require": {
+    "openai-php/client": "^0.17.1",
+    "symfony/http-client": "^7.3",
+    "nyholm/psr7": "^1.8"
+  },
+  "config": {
+    "allow-plugins": {
+      "php-http/discovery": true
+    }
+  }
+}
