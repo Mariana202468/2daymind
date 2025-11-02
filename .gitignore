@@ -1,0 +1,10 @@
+# Ignorar dependencias
+/vendor/
+
+# Ignorar archivos de entorno o seguridad
+.env
+.DS_Store
+
+# Archivos temporales
+/tmp/
+/logs/
