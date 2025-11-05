@@ -1,22 +1,26 @@
-# Etapa base
+# Usa PHP con Apache
 FROM php:8.2-apache
 
-# Instala dependencias necesarias
+# Instala dependencias del sistema necesarias
 RUN apt-get update && apt-get install -y \
-    libzip-dev zip unzip git curl \
-    && docker-php-ext-install zip pdo pdo_mysql
+    libcurl4-openssl-dev pkg-config libssl-dev zip unzip git \
+    && docker-php-ext-install mysqli pdo pdo_mysql
 
-# Copia todos los archivos al servidor web
+# Copia los archivos del proyecto al contenedor
 COPY . /var/www/html/
 
-# Habilita mod_rewrite (importante para PHP moderno)
-RUN a2enmod rewrite
+# Instala Composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# Cambia permisos
+# Instala las dependencias PHP (incluye openai-php/client)
+WORKDIR /var/www/html/
+RUN composer install --no-dev --optimize-autoloader
+
+# Da permisos al servidor
 RUN chown -R www-data:www-data /var/www/html
 
-# Expone el puerto estándar
+# Expone el puerto
 EXPOSE 80
 
-# Comando de inicio
+# Inicia Apache
 CMD ["apache2-foreground"]
