@@ -1,9 +1,13 @@
 <?php
-// ✅ Forzar HTTPS (esto debe ir dentro del bloque PHP, antes de cualquier salida)
-if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off') {
-    $redirect = 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-    header('Location: ' . $redirect);
-    exit;
+// ✅ Forzar HTTPS solo si no está activo (Render ya lo maneja correctamente)
+if (
+    empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off'
+) {
+    if (empty($_SERVER['HTTP_X_FORWARDED_PROTO']) || $_SERVER['HTTP_X_FORWARDED_PROTO'] !== 'https') {
+        $redirect = 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+        header('Location: ' . $redirect);
+        exit;
+    }
 }
 
 error_reporting(E_ALL);
@@ -12,10 +16,10 @@ ini_set('display_errors', 1);
 session_start();
 require __DIR__ . '/includes/openai.php';
 
-
 $sector = $_GET['sector'] ?? 'general';
 $nombre = $_SESSION['nombre'] ?? 'Usuario';
 ?>
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -36,12 +40,12 @@ $nombre = $_SESSION['nombre'] ?? 'Usuario';
       background: radial-gradient(circle at center, var(--azul-profundo), var(--azul-oscuro));
       color: var(--texto-claro);
       font-family: 'Segoe UI', sans-serif;
-      overflow-x: hidden;
+      height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 25px;
-      height: 100vh;
+      justify-content: flex-start;
+      padding-top: 25px;
     }
 
     h2 {
@@ -50,7 +54,6 @@ $nombre = $_SESSION['nombre'] ?? 'Usuario';
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       text-shadow: 0 0 20px rgba(201,162,39,0.4);
-      margin-bottom: 10px;
     }
 
     .sector-badge {
@@ -62,31 +65,10 @@ $nombre = $_SESSION['nombre'] ?? 'Usuario';
       box-shadow: 0 0 10px rgba(201,162,39,0.5);
     }
 
-    /* === Campo de texto grande === */
-    #mensaje {
-      width: 85%;
-      max-width: 900px;
-      height: 60px;
-      background: #0c1c29;
-      color: #fff;
-      border: 1px solid rgba(201,162,39,0.3);
-      border-radius: 10px;
-      padding: 14px;
-      font-size: 1rem;
-      margin-bottom: 10px;
-      transition: all 0.3s ease;
-    }
-
-    #mensaje:focus {
-      border-color: var(--dorado-metal);
-      box-shadow: 0 0 12px rgba(201,162,39,0.5);
-      outline: none;
-    }
-
     #chatBox {
       width: 85%;
       max-width: 900px;
-      height: 55vh;
+      height: 50vh;
       overflow-y: auto;
       background: rgba(14, 30, 45, 0.85);
       border: 1px solid rgba(201,162,39,0.25);
@@ -126,6 +108,48 @@ $nombre = $_SESSION['nombre'] ?? 'Usuario';
       to { opacity: 1; transform: translateY(0); }
     }
 
+    /* === Campo de entrada superior === */
+    form {
+      width: 85%;
+      max-width: 900px;
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    input {
+      background: #0c1c29;
+      color: #fff;
+      border: 1px solid rgba(201,162,39,0.3);
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 1.1rem;
+      flex: 1;
+      box-shadow: 0 0 10px rgba(201,162,39,0.2);
+    }
+
+    input:focus {
+      border-color: var(--dorado-metal);
+      box-shadow: 0 0 15px rgba(201,162,39,0.5);
+      outline: none;
+    }
+
+    button {
+      background: linear-gradient(145deg, var(--dorado-metal), #d4af37);
+      color: #1a1e24;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 25px;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 15px rgba(201,162,39,0.3);
+    }
+
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 25px rgba(201,162,39,0.6);
+    }
+
     .suggestions {
       width: 85%;
       max-width: 900px;
@@ -150,23 +174,6 @@ $nombre = $_SESSION['nombre'] ?? 'Usuario';
     .suggestions button:hover {
       background: rgba(201,162,39,0.35);
       transform: scale(1.05);
-    }
-
-    button.enviar {
-      background: linear-gradient(145deg, var(--dorado-metal), #d4af37);
-      color: #1a1e24;
-      font-weight: 600;
-      border: none;
-      border-radius: 10px;
-      padding: 10px 20px;
-      transition: all 0.3s ease;
-      box-shadow: 0 0 15px rgba(201,162,39,0.3);
-      margin-top: 5px;
-    }
-
-    button.enviar:hover {
-      transform: scale(1.05);
-      box-shadow: 0 0 25px rgba(201,162,39,0.6);
     }
 
     .nav-links {
@@ -196,13 +203,15 @@ $nombre = $_SESSION['nombre'] ?? 'Usuario';
   </div>
 
   <!-- Campo de entrada grande arriba -->
-  <form id="chatForm" class="d-flex flex-column align-items-center">
-    <input id="mensaje" name="mensaje" type="text" placeholder="✍️ Escribe tu pregunta aquí...">
-    <button type="submit" class="enviar">Enviar</button>
+  <form id="chatForm">
+    <input id="mensaje" name="mensaje" type="text" placeholder="Escribe tu pregunta aquí...">
+    <button type="submit">Enviar</button>
   </form>
 
+  <!-- Chat principal -->
   <div id="chatBox" class="d-flex flex-column"></div>
 
+  <!-- Sugerencias -->
   <div class="suggestions">
     <button>¿Cuáles son las tendencias actuales en este sector?</button>
     <button>¿Qué oportunidades de inversión existen?</button>
