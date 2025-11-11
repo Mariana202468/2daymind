@@ -1,3 +1,9 @@
+if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off') {
+    $redirect = 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+    header('Location: ' . $redirect);
+    exit;
+}
+
 <?php
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
