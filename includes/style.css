@@ -2,7 +2,7 @@
 :root {
   --brand-dark: #0b1f2d;      /* Fondo principal */
   --brand-deep: #122b3c;      /* Gradiente o acento profundo */
-  --brand-gold: #c9a227;      /* Dorado corporativo */
+  --brand-gold: #d4af37;      /* Dorado metálico principal */
   --text: #e6edf3;            /* Texto principal */
   --muted: #9fb3c8;           /* Texto secundario */
   --accent-blue: #2f81f7;     /* Azul brillante de acción */
@@ -12,9 +12,9 @@
 body {
   min-height: 100vh;
   margin: 0;
-  background: linear-gradient(135deg, var(--brand-dark), var(--brand-deep));
-  color: var(--text);
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  background: radial-gradient(circle at top, #0d1927, #0a1420);
+  color: #f0f0f0;
+  font-family: 'Poppins', sans-serif;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -49,21 +49,47 @@ p {
   margin-bottom: 20px;
 }
 
-/* 🧭 Botones corporativos */
-.brand-btn, button {
-  background: var(--brand-gold);
-  color: #1a1e24;
+/* === Botones principales 2DayMind === */
+button, .boton-sector {
+  background: linear-gradient(145deg, #0e1b2a, #1a2c44);
+  border: 2px solid var(--brand-gold);
+  color: var(--brand-gold);
   font-weight: 600;
-  border: none;
-  border-radius: 10px;
-  padding: 10px 22px;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
+  padding: 12px 24px;
+  border-radius: 12px;
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.6);
+  transition: all 0.3s ease-in-out;
+  animation: glow 2.8s infinite ease-in-out; /* ✨ pulso dorado */
 }
 
-.brand-btn:hover, button:hover {
-  filter: brightness(0.95);
-  transform: scale(1.03);
+button:hover, .boton-sector:hover {
+  background: radial-gradient(circle at center, #1f3b5c 0%, #0e1b2a 100%);
+  color: #ffda6a; /* Dorado brillante */
+  transform: translateY(-2px);
+  box-shadow: 0 0 25px rgba(255, 215, 0, 0.9);
+}
+
+/* ✨ Efecto de pulso dorado */
+@keyframes glow {
+  0% { box-shadow: 0 0 10px rgba(212, 175, 55, 0.4); }
+  50% { box-shadow: 0 0 25px rgba(212, 175, 55, 0.9); }
+  100% { box-shadow: 0 0 10px rgba(212, 175, 55, 0.4); }
+}
+
+/* Íconos dentro del botón */
+button i, .boton-sector i {
+  color: var(--brand-gold);
+  margin-right: 8px;
+  transition: color 0.3s ease;
+}
+
+button:hover i, .boton-sector:hover i {
+  color: #ffcc00;
+}
+
+/* Texto principal */
+h1, h2, h3, p {
+  color: #ffda6a;
 }
 
 /* 🗨️ Chatbox (interfaz principal del asistente) */
