@@ -1,27 +1,27 @@
+<?php
+// ✅ Forzar HTTPS (esto debe ir dentro del bloque PHP, antes de cualquier salida)
 if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off') {
     $redirect = 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
     header('Location: ' . $redirect);
     exit;
 }
 
-<?php
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-require __DIR__ . '/includes/openai.php';
 session_start();
+require __DIR__ . '/includes/openai.php';
+
 
 $sector = $_GET['sector'] ?? 'general';
 $nombre = $_SESSION['nombre'] ?? 'Usuario';
 ?>
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <title>2DayMind – Asistente Inteligente</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
   <style>
     :root {
       --azul-oscuro: #0b1f2d;
@@ -36,12 +36,12 @@ $nombre = $_SESSION['nombre'] ?? 'Usuario';
       background: radial-gradient(circle at center, var(--azul-profundo), var(--azul-oscuro));
       color: var(--texto-claro);
       font-family: 'Segoe UI', sans-serif;
-      overflow: hidden;
-      height: 100vh;
+      overflow-x: hidden;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding-top: 25px;
+      padding: 25px;
+      height: 100vh;
     }
 
     h2 {
@@ -50,6 +50,7 @@ $nombre = $_SESSION['nombre'] ?? 'Usuario';
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       text-shadow: 0 0 20px rgba(201,162,39,0.4);
+      margin-bottom: 10px;
     }
 
     .sector-badge {
@@ -61,17 +62,38 @@ $nombre = $_SESSION['nombre'] ?? 'Usuario';
       box-shadow: 0 0 10px rgba(201,162,39,0.5);
     }
 
+    /* === Campo de texto grande === */
+    #mensaje {
+      width: 85%;
+      max-width: 900px;
+      height: 60px;
+      background: #0c1c29;
+      color: #fff;
+      border: 1px solid rgba(201,162,39,0.3);
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 1rem;
+      margin-bottom: 10px;
+      transition: all 0.3s ease;
+    }
+
+    #mensaje:focus {
+      border-color: var(--dorado-metal);
+      box-shadow: 0 0 12px rgba(201,162,39,0.5);
+      outline: none;
+    }
+
     #chatBox {
       width: 85%;
       max-width: 900px;
-      height: 60vh;
+      height: 55vh;
       overflow-y: auto;
       background: rgba(14, 30, 45, 0.85);
       border: 1px solid rgba(201,162,39,0.25);
       border-radius: 14px;
       padding: 15px;
       box-shadow: 0 0 25px rgba(0,0,0,0.35);
-      margin-top: 15px;
+      margin-top: 10px;
       scroll-behavior: smooth;
     }
 
@@ -104,44 +126,6 @@ $nombre = $_SESSION['nombre'] ?? 'Usuario';
       to { opacity: 1; transform: translateY(0); }
     }
 
-    form {
-      width: 85%;
-      max-width: 900px;
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
-    }
-
-    input {
-      background: #0c1c29;
-      color: #fff;
-      border: 1px solid rgba(201,162,39,0.3);
-      border-radius: 10px;
-      padding: 10px;
-    }
-
-    input:focus {
-      border-color: var(--dorado-metal);
-      box-shadow: 0 0 12px rgba(201,162,39,0.4);
-      outline: none;
-    }
-
-    button {
-      background: linear-gradient(145deg, var(--dorado-metal), #d4af37);
-      color: #1a1e24;
-      font-weight: 600;
-      border: none;
-      border-radius: 10px;
-      padding: 10px 20px;
-      transition: all 0.3s ease;
-      box-shadow: 0 0 15px rgba(201,162,39,0.3);
-    }
-
-    button:hover {
-      transform: scale(1.05);
-      box-shadow: 0 0 25px rgba(201,162,39,0.6);
-    }
-
     .suggestions {
       width: 85%;
       max-width: 900px;
@@ -166,6 +150,23 @@ $nombre = $_SESSION['nombre'] ?? 'Usuario';
     .suggestions button:hover {
       background: rgba(201,162,39,0.35);
       transform: scale(1.05);
+    }
+
+    button.enviar {
+      background: linear-gradient(145deg, var(--dorado-metal), #d4af37);
+      color: #1a1e24;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 20px;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 15px rgba(201,162,39,0.3);
+      margin-top: 5px;
+    }
+
+    button.enviar:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 25px rgba(201,162,39,0.6);
     }
 
     .nav-links {
@@ -194,6 +195,12 @@ $nombre = $_SESSION['nombre'] ?? 'Usuario';
     <span class="sector-badge"><?= strtoupper($sector) ?></span>
   </div>
 
+  <!-- Campo de entrada grande arriba -->
+  <form id="chatForm" class="d-flex flex-column align-items-center">
+    <input id="mensaje" name="mensaje" type="text" placeholder="✍️ Escribe tu pregunta aquí...">
+    <button type="submit" class="enviar">Enviar</button>
+  </form>
+
   <div id="chatBox" class="d-flex flex-column"></div>
 
   <div class="suggestions">
@@ -202,11 +209,6 @@ $nombre = $_SESSION['nombre'] ?? 'Usuario';
     <button>¿Cómo afecta la tecnología al sector?</button>
     <button>¿Qué riesgos debo tener en cuenta?</button>
   </div>
-
-  <form id="chatForm">
-    <input id="mensaje" name="mensaje" type="text" placeholder="Escribe tu pregunta...">
-    <button type="submit">Enviar</button>
-  </form>
 
   <div class="nav-links">
     <a href="index.php">⬅ Volver a sectores</a>
@@ -219,14 +221,12 @@ $nombre = $_SESSION['nombre'] ?? 'Usuario';
   const box = document.getElementById('chatBox');
   const input = document.getElementById('mensaje');
 
-  // Reiniciar la memoria al cargar la app
   fetch('./api/analizar.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: 'reset=true'
   });
 
-  // Geolocalización automática
   async function obtenerUbicacion() {
     try {
       const res = await fetch("https://ipapi.co/json/");
@@ -239,7 +239,6 @@ $nombre = $_SESSION['nombre'] ?? 'Usuario';
   }
   obtenerUbicacion();
 
-  // Botones de sugerencias
   document.querySelectorAll('.suggestions button').forEach(btn => {
     btn.addEventListener('click', () => {
       input.value = btn.textContent;
@@ -247,7 +246,6 @@ $nombre = $_SESSION['nombre'] ?? 'Usuario';
     });
   });
 
-  // Envío del mensaje
   form.addEventListener('submit', async e => {
     e.preventDefault();
     const msg = input.value.trim();
