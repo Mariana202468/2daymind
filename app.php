@@ -1,14 +1,6 @@
 <?php
-// ✅ Forzar HTTPS solo si no está activo (Render ya lo maneja correctamente)
-if (
-    empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off'
-) {
-    if (empty($_SERVER['HTTP_X_FORWARDED_PROTO']) || $_SERVER['HTTP_X_FORWARDED_PROTO'] !== 'https') {
-        $redirect = 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-        header('Location: ' . $redirect);
-        exit;
-    }
-}
+// 🔧 HTTPS desactivado en este entorno (no hay puerto 443 configurado).
+// Cuando tengas SSL bien configurado, podrás reactivar aquí la redirección.
 
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -16,10 +8,12 @@ ini_set('display_errors', 1);
 session_start();
 require __DIR__ . '/includes/openai.php';
 
-$sector = $_GET['sector'] ?? 'general';
-$nombre = $_SESSION['nombre'] ?? 'Usuario';
-?>
+$sector  = $_GET['sector'] ?? 'general';
+$nombre  = $_SESSION['nombre'] ?? 'Usuario';
 
+// Sanitizar para salida HTML
+$sector_safe = htmlspecialchars($sector, ENT_QUOTES, 'UTF-8');
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -199,7 +193,7 @@ $nombre = $_SESSION['nombre'] ?? 'Usuario';
   <div class="text-center">
     <h2>💡 2DayMind – Asistente Inteligente</h2>
     <p>Tu asesor especializado en el sector:</p>
-    <span class="sector-badge"><?= strtoupper($sector) ?></span>
+    <span class="sector-badge"><?= strtoupper($sector_safe) ?></span>
   </div>
 
   <!-- Campo de entrada grande arriba -->
@@ -230,6 +224,7 @@ $nombre = $_SESSION['nombre'] ?? 'Usuario';
   const box = document.getElementById('chatBox');
   const input = document.getElementById('mensaje');
 
+  // Reset de memoria cognitiva al cargar
   fetch('./api/analizar.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },

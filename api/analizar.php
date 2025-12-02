@@ -1,39 +1,33 @@
 <?php
-require __DIR__ . '/../includes/openai.php';
-require __DIR__ . '/../includes/modelo_cognitivo.php';
+// api/analizar.php
 
-// 🧹 Permite reiniciar la memoria cognitiva si se solicita
-if (isset($_POST['reset']) && $_POST['reset'] === 'true') {
-    file_put_contents(__DIR__ . '/../includes/modelo_cognitivo.txt', '');
-    echo "🧠 Memoria cognitiva reiniciada.";
+require_once __DIR__ . '/../includes/openai.php';
+
+// CORS (ajusta origen si hace falta)
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
     exit;
 }
 
-// 🛑 Validar que haya mensaje
-if (!isset($_POST['mensaje']) || trim($_POST['mensaje']) === '') {
-    echo 'Por favor escribe algo.';
+// Leer mensaje (JSON o POST)
+$input   = json_decode(file_get_contents('php://input'), true);
+$mensaje = $input['mensaje'] ?? ($_POST['mensaje'] ?? '');
+
+if (!$mensaje) {
+    http_response_code(400);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['ok' => false, 'error' => 'Falta el campo "mensaje"']);
     exit;
 }
 
-$mensaje = trim($_POST['mensaje']);
-$pais = $_POST['pais'] ?? 'Global';
-$ciudad = $_POST['ciudad'] ?? '';
-$sector = $_GET['sector'] ?? 'general';
+$respuesta = consultarOpenAI($mensaje);
 
-// 🧩 Cargar contexto anterior (memoria local)
-$contexto = obtenerContextoCognitivo();
-
-// 🧠 Construir entrada con contexto global
-$entrada = "Usuario desde $pais" . ($ciudad ? ", ciudad $ciudad" : "") .
-           " en el sector $sector pregunta:\n\n" . $mensaje .
-           "\n\nContexto previo:\n" . $contexto;
-
-// 🤖 Obtener respuesta del modelo
-$respuesta = consultarOpenAI($entrada);
-
-// 💾 Guardar la interacción en el modelo cognitivo local
-guardarCognicion($mensaje, $respuesta);
-
-// 📨 Mostrar respuesta limpia
-echo nl2br($respuesta);
-?>
+header('Content-Type: application/json; charset=utf-8');
+echo json_encode([
+    'ok'        => true,
+    'respuesta' => $respuesta,
+]);
