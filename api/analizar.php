@@ -1,33 +1,26 @@
 <?php
-// api/analizar.php
+header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/../includes/openai.php';
 
-// CORS (ajusta origen si hace falta)
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
+$mensaje = trim($_POST['mensaje'] ?? '');
+$pais    = trim($_POST['pais'] ?? '');
+$ciudad  = trim($_POST['ciudad'] ?? '');
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(204);
+if ($mensaje === '') {
+    echo json_encode([
+        'ok'        => false,
+        'respuesta' => 'Por favor escribe una pregunta o contexto para que pueda ayudarte 🙂',
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-// Leer mensaje (JSON o POST)
-$input   = json_decode(file_get_contents('php://input'), true);
-$mensaje = $input['mensaje'] ?? ($_POST['mensaje'] ?? '');
-
-if (!$mensaje) {
-    http_response_code(400);
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['ok' => false, 'error' => 'Falta el campo "mensaje"']);
-    exit;
-}
+$_POST['pais']   = $pais   ?: 'global';
+$_POST['ciudad'] = $ciudad ?: '';
 
 $respuesta = consultarOpenAI($mensaje);
 
-header('Content-Type: application/json; charset=utf-8');
 echo json_encode([
     'ok'        => true,
     'respuesta' => $respuesta,
-]);
+], JSON_UNESCAPED_UNICODE);

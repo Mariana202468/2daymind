@@ -6,21 +6,20 @@ require_once __DIR__ . '/busqueda_web.php';
 use Dotenv\Dotenv;
 use OpenAI\Factory;
 
-// 🔧 Cargar .env (pisando variables previas si las hubiera)
+// Cargar .env
 $dotenvPath = __DIR__ . '/..';
 if (file_exists($dotenvPath . '/.env')) {
     $dotenv = Dotenv::createMutable($dotenvPath);
     $dotenv->load();
-} else {
-    error_log("⚠️ No se encontró .env en $dotenvPath");
 }
 
-// Debug opcional: comprobar que la key está cargada
-if (!isset($_ENV['OPENAI_API_KEY']) && !getenv('OPENAI_API_KEY')) {
-    error_log("⚠️ No se cargó OPENAI_API_KEY desde .env");
-}
+// 👇 OJO: aquí NO hay header('Content-Type'), NI echo json_encode
 
-function consultarOpenAI(string $mensaje): string
+/**
+ * Llama a OpenAI y devuelve SOLO el texto de respuesta (string),
+ * sin imprimir nada.
+ */
+function consultarOpenAI(string $mensaje, string $sector = 'general', string $pais = 'global', string $ciudad = ''): string
 {
     $apiKey = $_ENV['OPENAI_API_KEY'] ?? getenv('OPENAI_API_KEY');
 
@@ -29,20 +28,13 @@ function consultarOpenAI(string $mensaje): string
     }
 
     try {
-        // Cliente OpenAI
         $client = (new Factory())
             ->withApiKey($apiKey)
             ->make();
 
-        // Contexto de usuario
-        $sector = $_GET['sector'] ?? 'general';
-        $pais   = $_POST['pais']   ?? 'global';
-        $ciudad = $_POST['ciudad'] ?? '';
-
-        // 🔎 Contexto externo (web filtrada)
+        // contexto externo
         $contextoWeb = buscarEnWeb($mensaje);
 
-        // Prompt “crítico” y estructurado
         $prompt = "Eres 2DayMind, un asesor cognitivo crítico y riguroso.
 País: $pais" . ($ciudad ? ", Ciudad: $ciudad" : "") . ".
 Sector: $sector.
@@ -60,11 +52,8 @@ Instrucciones:
 2) Evidencia
 3) Riesgos / Incertidumbres
 4) Nivel_de_confianza.
-
-Devuelve SOLO ese esquema numerado, sin texto extra antes ni después.
 ";
 
-        // 🚀 API nueva de responses
         $result = $client->responses()->create([
             'model'        => 'gpt-4o-mini',
             'input'        => $mensaje,
@@ -73,11 +62,9 @@ Devuelve SOLO ese esquema numerado, sin texto extra antes ni después.
 
         $respuesta = $result->outputText ?? '⚠️ Sin respuesta.';
 
-        // Guardar en tu modelo cognitivo
         guardarCognicion($mensaje, $respuesta);
 
-        return nl2br($respuesta);
-
+        return $respuesta;
     } catch (\Throwable $e) {
         error_log('Error OpenAI: ' . $e->getMessage());
         return '❌ Error al conectar con OpenAI: ' . $e->getMessage();
