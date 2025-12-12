@@ -1,77 +1,66 @@
 <?php
+// includes/busqueda_web.php
 
-function buscarEnWeb(string $query, int $maxFuentes = 3): string
+/**
+ * Busca en la web usando la API pública de DuckDuckGo
+ * y devuelve un texto con resumen + algunas fuentes.
+ */
+function buscarEnWeb(string $query): string
 {
-    $query = urlencode($query);
-    $url   = "https://api.duckduckgo.com/?q=$query&format=json&no_redirect=1&no_html=1";
+    $query = trim($query);
+    if ($query === '') {
+        return '';
+    }
+
+    $url = 'https://api.duckduckgo.com/?' . http_build_query([
+        'q'           => $query,
+        'format'      => 'json',
+        'no_redirect' => 1,
+        'no_html'     => 1,
+    ]);
 
     $ch = curl_init($url);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT        => 8,
+        CURLOPT_USERAGENT      => '2DayMind/1.0 (+https://2daymind.com)',
     ]);
+
     $response = curl_exec($ch);
+    $err      = curl_error($ch);
     curl_close($ch);
 
-    if (!$response) {
-        return "⚠️ No se pudo obtener información reciente.";
+    if ($err || !$response) {
+        return '';
     }
 
-    $data    = json_decode($response, true);
-    $fuentes = [];
+    $data = json_decode($response, true);
+    if (!is_array($data)) {
+        return '';
+    }
 
-    // 1) Resumen principal
+    $partes = [];
+
     if (!empty($data['AbstractText'])) {
-        $fuentes[] = [
-            'texto' => $data['AbstractText'],
-            'url'   => $data['AbstractURL'] ?? null,
-        ];
+        $partes[] = "Resumen:\n" . $data['AbstractText'];
     }
 
-    // 2) Related topics
-    if (!empty($data['RelatedTopics'])) {
+    // coger algunas fuentes con título + URL
+    $fuentes = [];
+    if (!empty($data['RelatedTopics']) && is_array($data['RelatedTopics'])) {
         foreach ($data['RelatedTopics'] as $topic) {
-            if (isset($topic['FirstURL'], $topic['Text'])) {
-                $fuentes[] = [
-                    'texto' => $topic['Text'],
-                    'url'   => $topic['FirstURL'],
-                ];
+            if (!empty($topic['Text']) && !empty($topic['FirstURL'])) {
+                $fuentes[] = '- ' . $topic['Text'] . ' (' . $topic['FirstURL'] . ')';
             }
-        }
-    }
-
-    if (!$fuentes) {
-        return "⚠️ No se encontraron resultados relevantes en línea.";
-    }
-
-    // 3) Filtro de dominios “más confiables”
-    $whitelist     = ['.gov', '.edu', '.org', 'who.int', 'un.org', 'worldbank.org'];
-    $seleccionadas = [];
-
-    foreach ($fuentes as $f) {
-        if (empty($f['url'])) continue;
-
-        $host = parse_url($f['url'], PHP_URL_HOST) ?? '';
-        foreach ($whitelist as $dom) {
-            if (str_ends_with($host, $dom)) {
-                $seleccionadas[] = $f + ['host' => $host];
+            if (count($fuentes) >= 5) {
                 break;
             }
         }
-        if (count($seleccionadas) >= $maxFuentes) break;
     }
 
-    // Si el filtro fue muy duro, usa lo que haya
-    if (!$seleccionadas) {
-        $seleccionadas = array_slice($fuentes, 0, $maxFuentes);
+    if ($fuentes) {
+        $partes[] = "Fuentes:\n" . implode("\n", $fuentes);
     }
 
-    // 4) Construir contexto legible
-    $contexto = "Fuentes web:\n";
-    foreach ($seleccionadas as $i => $f) {
-        $host = $f['host'] ?? parse_url($f['url'] ?? '', PHP_URL_HOST);
-        $contexto .= "- Fuente " . ($i + 1) . " ($host): {$f['texto']} [{$f['url']}]\n";
-    }
-
-    return $contexto;
+    return implode("\n\n", $partes);
 }
