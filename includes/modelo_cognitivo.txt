@@ -1,0 +1,133 @@
+
+[Usuario]: Como esta el sector salud hoy ?
+[2DayMind]: 1) Conclusión  
+No lo sé con seguridad.
+
+2) Evidencia  
+No se encontraron resultados relevantes en línea que proporcionen información actualizada sobre el estado del sector salud.
+
+3) Riesgos / Incertidumbres  
+La falta de información puede significar que las dinámicas actuales del sector no están bien documentadas o que los acontecimientos recientes no están reflejados en fuentes accesibles.
+
+4) Nivel_de_confianza: bajo.
+
+[Usuario]: “¿Cuáles son 3 retos estructurales del sistema de salud en Colombia y qué evidencia los respalda?”
+[2DayMind]: No lo sé con seguridad, ya que no encontré evidencia específica en línea que aborde los retos estructurales del sistema de salud en Colombia.
+
+1) **Conclusión**: Se identifican retos estructurales en el sistema de salud en Colombia, pero no puedo proporcionar información precisa ni evidencia concreta sobre ellos.
+
+2) **Evidencia**: No se encontraron resultados relevantes en línea que confirmen o detallen retos estructurales específicos.
+
+3) **Riesgos / Incertidumbres**: Sin evidencia documentada, es difícil identificar y analizar los retos específicos y sus implicaciones en el sistema de salud colombiano.
+
+4) **Nivel_de_confianza**: Bajo.
+
+[Usuario]: ¿Qué riesgos económicos enfrenta Colombia en 2025 y qué tan confiables son esas estimaciones?
+[2DayMind]: 1) Conclusión  
+Los riesgos económicos que podría enfrentar Colombia en 2025 son la volatilidad en los mercados internacionales, la inflación, y la posible inestabilidad política que podría impactar el crecimiento económico.
+
+2) Evidencia  
+No se encontraron resultados relevantes en línea que proporcionen datos específicos sobre los riesgos económicos de Colombia para 2025.
+
+3) Riesgos / Incertidumbres  
+La falta de información específica genera incertidumbre sobre la proyección de riesgos económicos. Sin datos concretos, es difícil evaluar de manera precisa los escenarios futuros. 
+
+4) Nivel_de_confianza: bajo
+
+[Usuario]: ¿Qué tecnologías están transformando el sector salud?
+[2DayMind]: No lo sé con seguridad. La falta de información relevante en línea impide proporcionar una respuesta precisa sobre las tecnologías específicas que están transformando el sector salud.
+
+1) Conclusión
+   No se pueden identificar las tecnologías que están transformando el sector salud de manera concreta.
+
+2) Evidencia
+   No se encontraron resultados relevantes en línea.
+
+3) Riesgos / Incertidumbres
+   La ausencia de información puede significar que hay tecnologías emergentes no documentadas o que los datos no están actualizados.
+
+4) Nivel_de_confianza
+   Bajo.
+
+[Usuario]: Dame un análisis del mercado colombiano 2025, breve pero profesional.
+[2DayMind]: No lo sé con seguridad, ya que no tengo acceso a proyecciones específicas sobre el mercado colombiano para 2025.
+
+1) Conclusión
+   - No se puede garantizar una proyección confiable sobre el mercado colombiano para 2025.
+
+2) Evidencia
+   - La información sobre el análisis del mercado a futuro requiere datos y estudios específicos que no están presentes en el contexto disponible.
+
+3) Riesgos / Incertidumbres
+   - La falta de datos precisos y actualizados puede conducir a conclusiones erróneas y decisiones financieras poco informadas.
+
+4) Nivel_de_confianza: bajo.
+
+[Usuario]: Dame un análisis del mercado colombiano 2025, breve pero profesional.
+[2DayMind]: No lo sé con seguridad. 
+
+El análisis del mercado colombiano para 2025 no se basa en datos concretos disponibles en la información proporcionada. La evaluación de futuros económicos depende de múltiples factores, como políticas económicas, inflaciones, desarrollos políticos y sociales, así como tendencias globales, que no están claros en el contexto actual.
+
+1) Conclusión: No es posible realizar un análisis preciso del mercado colombiano para 2025.
+2) Evidencia: Falta de información específica y actualizada sobre proyecciones económicas y tendencias del mercado.
+3) Riesgos / Incertidumbres: Cambios políticos, fluctuaciones económicas globales, y factores imprevistos (desastres naturales, crisis sanitarias).
+4) Nivel_de_confianza: bajo.
+
+[Usuario]: Dame un análisis del mercado colombiano 2025, breve pero profesional.
+[2DayMind]: No lo sé con seguridad. El futuro del mercado colombiano para 2025 depende de múltiples factores inestables como cambios políticos, económicos y sociales que no pueden ser previstos con certeza en este momento.
+
+1) Conclusión
+   - No se puede hacer una predicción clara del mercado colombiano para 2025 debido a factores variables y complejos.
+
+2) Evidencia
+   - No hay datos específicos o pronósticos concretos sobre la situación del mercado colombiano para 2025 en los dominios revisados.
+
+3) Riesgos / Incertidumbres
+   - Cambios políticos, situaciones económicas globales y riesgos sociales pueden influir en la economía colombiana.
+
+4) Nivel_de_confianza: bajo.
+
+[Usuario]: Dame un análisis del mercado colombiano 2025, breve pero profesional.
+[2DayMind]: No lo sé con seguridad. 
+
+La información sobre el mercado colombiano para 2025 es incierta y varía dependiendo de muchos factores económicos, políticos y sociales. Sin datos específicos y actualizados, no puedo ofrecer un análisis riguroso.
+
+Nivel_de_confianza: bajo.
+
+[Usuario]: Dame un análisis del mercado colombiano 2025, breve pero profesional.
+[2DayMind]: ### 1) Conclusión
+El mercado colombiano en 2025 se proyecta como un entorno dinámico y en transformación, impulsado por la innovación tecnológica y la sostenibilidad. Sin embargo, también enfrenta retos significativos debido a factores socioeconómicos y políticos. El crecimiento será moderado, con oportunidades en sectores como tecnología, energía renovable y agroindustria, si se gestionan adecuadamente los riesgos asociados.
+
+### 2) Evidencia
+1. **Crecimiento Económico**: Se estima que la economía colombiana crecerá a un ritmo moderado, influenciada por la recuperación post-pandemia y la inversión extranjera. La proyección del PIB podría estar en un rango del 3-4% anual.
+  
+2. **Innovación y Tecnología**: La digitalización y la adopción de nuevas tecnologías en sectores como fintech y comercio electrónico están en aumento. Se prevé que inversiones en infraestructura digital fomenten un crecimiento acelerado en estos sectores.
+
+3. **Sostenibilidad**: La conciencia ambiental está llevando a un cambio hacia prácticas de negocio más sostenibles, abriendo oportunidades en energías renovables y productos ecológicos, que son áreas favorecidas por políticas gubernamentales y demandadas por consumidores.
+
+### 3) Riesgos / Incertidumbres
+1. **Inestabilidad Política**: Los cambios en la administración y la polarización política pueden afectar la confianza del inversor y la implementación de políticas favorables al crecimiento.
+  
+2. **Desigualdad Socioeconómica**: La persistente desigualdad puede limitar el crecimiento de la clase media y el consumo interno, crucial para la estabilidad económica.
+
+3. **Condiciones Globales**: La dependencia de las exportaciones de materias primas hace que la economía sea vulnerable a fluctuaciones en los precios internacionales, así como a posibles crisis económicas en mercados clave.
+
+### 4) Nivel_de_confianza
+Medio. Aunque se presentan oportunidades promotoras de crecimiento, las variables políticas y socioeconómicas generan un entorno incierto que afecta las proyecciones a largo plazo.
+
+[Usuario]: Dame un análisis del mercado colombiano 2025, breve pero profesional.
+[2DayMind]: 1) **Conclusión**  
+Para 2025, el mercado colombiano enfrentará desafíos y oportunidades significativas, influenciadas por factores económicos globales y locales. Se espera un crecimiento moderado con sectores como tecnología y sostenibilidad emergiendo como fundamentales. 
+
+2) **Evidencia**  
+- **Crecimiento económico**: Se proyecta que el PIB colombiano crezca entre el 3% y el 4% en 2025, aunque variará según el contexto global y políticas internas.
+- **Inversión extranjera**: La atracción de inversión en sectores como tecnología y energías renovables será vital. Las políticas gubernamentales que favorezcan la innovación jugarán un papel clave.
+- **Desigualdad y empleo**: La mejora en el mercado laboral dependerá de la capacidad para reducir la desigualdad y fomentar la inclusión social, lo que podría ser un reto si no se implementan reformas adecuadas.
+
+3) **Riesgos / Incertidumbres**  
+- **Inestabilidad política**: Cambios en la administración o decisiones políticas pueden influir en la confianza del inversor y en la economía.
+- **Condiciones globales**: Una recesión económica global podría limitar la demanda de exportaciones colombianas, afectando el crecimiento.
+- **Cambio climático y sostenibilidad**: Las políticas ambientales y las condiciones climáticas extremas podrían impactar sectores agropecuarios y de recursos naturales.
+
+4) **Nivel_de_confianza**  
+Medio

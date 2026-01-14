@@ -1,36 +1,34 @@
 <?php
-// includes/busqueda_web.php
-
 /**
- * Busca en la web usando la API pública de DuckDuckGo
- * y devuelve un texto con resumen + algunas fuentes.
+ * Búsqueda web sencilla usando DuckDuckGo Instant Answer.
+ * Devuelve un texto con RESUMEN + hasta 3 resultados con enlace.
+ *
+ * OJO: no imprime nada, solo devuelve string para que OpenAI lo use como contexto.
  */
-function buscarEnWeb(string $query): string
+function buscarEnWeb(string $query, ?string $pais = null, ?string $sector = null): string
 {
-    $query = trim($query);
-    if ($query === '') {
-        return '';
+    // Enriquecer la query con país / sector si existen
+    $fullQuery = $query;
+    if ($sector) {
+        $fullQuery .= ' ' . $sector;
+    }
+    if ($pais && strcasecmp($pais, 'Global') !== 0) {
+        $fullQuery .= ' ' . $pais;
     }
 
-    $url = 'https://api.duckduckgo.com/?' . http_build_query([
-        'q'           => $query,
-        'format'      => 'json',
-        'no_redirect' => 1,
-        'no_html'     => 1,
-    ]);
+    $q = urlencode($fullQuery);
+
+    // API pública de DuckDuckGo
+    $url = "https://api.duckduckgo.com/?q={$q}&format=json&no_redirect=1&no_html=1";
 
     $ch = curl_init($url);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT        => 8,
-        CURLOPT_USERAGENT      => '2DayMind/1.0 (+https://2daymind.com)',
-    ]);
-
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 8);
     $response = curl_exec($ch);
-    $err      = curl_error($ch);
     curl_close($ch);
 
-    if ($err || !$response) {
+    if (!$response) {
+        // Sin contexto web, mejor devolver vacío que un mensaje de error
         return '';
     }
 
@@ -39,28 +37,52 @@ function buscarEnWeb(string $query): string
         return '';
     }
 
-    $partes = [];
+    $trozos = [];
 
+    // Resumen principal si existe
     if (!empty($data['AbstractText'])) {
-        $partes[] = "Resumen:\n" . $data['AbstractText'];
+        $trozos[] = "Resumen: " . $data['AbstractText'];
     }
 
-    // coger algunas fuentes con título + URL
-    $fuentes = [];
+    if (!empty($data['AbstractURL'])) {
+        $trozos[] = "Fuente principal: " . $data['AbstractURL'];
+    }
+
+    // RelatedTopics (hasta 3)
     if (!empty($data['RelatedTopics']) && is_array($data['RelatedTopics'])) {
+        $count = 0;
         foreach ($data['RelatedTopics'] as $topic) {
-            if (!empty($topic['Text']) && !empty($topic['FirstURL'])) {
-                $fuentes[] = '- ' . $topic['Text'] . ' (' . $topic['FirstURL'] . ')';
-            }
-            if (count($fuentes) >= 5) {
+            if ($count >= 3) {
                 break;
+            }
+
+            // A veces vienen anidados en 'Topics'
+            if (isset($topic['Topics']) && is_array($topic['Topics'])) {
+                foreach ($topic['Topics'] as $sub) {
+                    if ($count >= 3) {
+                        break;
+                    }
+                    if (!empty($sub['Text'])) {
+                        $line = "- " . $sub['Text'];
+                        if (!empty($sub['FirstURL'])) {
+                            $line .= " (" . $sub['FirstURL'] . ")";
+                        }
+                        $trozos[] = $line;
+                        $count++;
+                    }
+                }
+            } else {
+                if (!empty($topic['Text'])) {
+                    $line = "- " . $topic['Text'];
+                    if (!empty($topic['FirstURL'])) {
+                        $line .= " (" . $topic['FirstURL'] . ")";
+                    }
+                    $trozos[] = $line;
+                    $count++;
+                }
             }
         }
     }
 
-    if ($fuentes) {
-        $partes[] = "Fuentes:\n" . implode("\n", $fuentes);
-    }
-
-    return implode("\n\n", $partes);
+    return trim(implode("\n", $trozos));
 }

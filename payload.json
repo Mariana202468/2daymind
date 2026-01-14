@@ -1,0 +1,17 @@
+
+{
+  "source_url": "$DID_SOURCE_URL",
+  "script": {
+    "type": "text",
+    "subtitles": "false",
+    "provider": {
+        "type": "microsoft",
+        "voice_id": "es-MX-JorgeNeural"
+    },
+    "input": "Hola, esta es una prueba con el enlace corregido."
+  },
+  "config": {
+    "fluent": "false",
+    "pad_audio": "0.0"
+  }
+}

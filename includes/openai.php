@@ -2,36 +2,39 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../vendor/autoload.php';
-require_once __DIR__ . '/modelo_cognitivo.php';
 require_once __DIR__ . '/busqueda_web.php';
 
 use Dotenv\Dotenv;
 use OpenAI\Factory;
 
-// 🔧 Cargar .env
-$dotenvPath = __DIR__ . '/..';
-if (file_exists($dotenvPath . '/.env')) {
-    $dotenv = Dotenv::createMutable($dotenvPath);
-    $dotenv->load();
-} else {
-    error_log("⚠️ No se encontró .env en $dotenvPath");
-}
+/**
+ * Carga variables de entorno desde .env (si existe).
+ */
+(function () {
+    $dotenvPath = __DIR__ . '/..';
 
-// Debug opcional: comprobar que la key está cargada
-if (!isset($_ENV['OPENAI_API_KEY']) && !getenv('OPENAI_API_KEY')) {
-    error_log("⚠️ No se cargó OPENAI_API_KEY desde .env");
-}
+    if (file_exists($dotenvPath . '/.env')) {
+        $dotenv = Dotenv::createMutable($dotenvPath);
+        $dotenv->load();
+    } else {
+        error_log("⚠️ No se encontró .env en $dotenvPath");
+    }
+})();
 
 /**
- * Llama a OpenAI y devuelve SOLO el texto listo para mostrar en el chat.
- * No hace echo ni header, para poder reutilizarla en API y en test_openai.php.
+ * Función principal con soporte Multilingüe y MEMORIA.
  */
-function consultarOpenAI(string $mensaje, string $sector = 'general'): string
-{
+function consultarOpenAI(
+    string $mensaje,
+    string $sector = 'general',
+    string $pais   = 'Global',
+    string $ciudad = '',
+    string $historial = '' // 🆕 NUEVO PARÁMETRO: Recibe los recuerdos de la DB
+): string {
     $apiKey = $_ENV['OPENAI_API_KEY'] ?? getenv('OPENAI_API_KEY');
 
     if (!$apiKey) {
-        return "❌ No se encontró la API key (OPENAI_API_KEY) en .env";
+        return "❌ No se encontró la API key (OPENAI_API_KEY) en la configuración del servidor.";
     }
 
     $mensaje = trim($mensaje);
@@ -39,105 +42,80 @@ function consultarOpenAI(string $mensaje, string $sector = 'general'): string
         return "Por favor escribe una pregunta o contexto para que pueda ayudarte 🙂";
     }
 
-    // Contexto de usuario (POST opcional)
-    $pais   = $_POST['pais']   ?? 'Global';
-    $ciudad = $_POST['ciudad'] ?? '';
-
     try {
-        // Cliente OpenAI
         $client = (new Factory())
             ->withApiKey($apiKey)
             ->make();
 
-        // 🌐 Búsqueda web enriquecida
-        $busquedaTexto = $mensaje;
-        if ($sector !== '') {
-            $busquedaTexto .= ' sector ' . $sector;
+        // 1️⃣ BÚSQUEDA WEB (Se mantiene igual)
+        $contextoWeb = '';
+        try {
+            $contextoWeb = buscarEnWeb($mensaje, $sector, $pais, $ciudad);
+        } catch (\Throwable $e) {
+            error_log('Error en buscarEnWeb: ' . $e->getMessage());
+            $contextoWeb = '';
         }
 
-        $contextoWeb = buscarEnWeb($busquedaTexto, $pais, $sector);
-        $contextoWeb = trim($contextoWeb);
+        // 2️⃣ SISTEMA / INSTRUCCIONES (INTEGRAMOS LA MEMORIA AQUÍ)
+        $baseInstrucciones = <<<PROMPT
+Eres 2DayMind, un asistente de análisis para personas no expertas. 
 
-        // ¿Hay algo útil en web?
-        $hayContextoWeb = $contextoWeb !== '';
+REGLA DE MEMORIA:
+- Tienes acceso a una base de datos física donde guardas cada conversación (ver HISTORIAL abajo). 
+- NUNCA digas que no tienes memoria a largo plazo. Al contrario, demuestra que recuerdas al usuario mencionando datos de charlas pasadas.
+- Si el usuario te pregunta "¿Me recuerdas?", busca en el historial y responde con detalles específicos.
 
-        if ($hayContextoWeb) {
-            // 🧠 Modo: evidencia + enlaces
-            $prompt = <<<PROMPT
-Eres 2DayMind, un asesor cognitivo crítico y riguroso.
+REGLA CRÍTICA DE IDIOMA: 
+Debes detectar el idioma del usuario y responder SIEMPRE en ese mismo idioma. 
+Si el mensaje incluye una instrucción específica de idioma al inicio, obedécela estrictamente.
 
-Contexto del usuario:
-- País: $pais
-- Ciudad: {$ciudad}
-- Sector: $sector
+Tu objetivo es ayudar a la persona a entender mejor el tema y tomar decisiones más informadas. 
+Tu tono debe ser cercano pero riguroso.
 
-Tienes el siguiente CONTEXTO_WEB basado en búsquedas recientes
-(incluye resúmenes y enlaces):
+Siempre debes:
+- Explicar qué se sabe con cierta confianza y por qué.
+- Explicar qué NO se sabe bien o es incierto.
+- Sugerir cómo la persona podría validar o ampliar la información.
 
+Estilo de respuesta:
+- Responde como en una conversación normal, con párrafos cortos.
+- No uses formato Markdown complejo; escribe texto plano.
+- Termina siempre con una frase tipo: "En resumen..." y menciona de forma explícita tu nivel de confianza (alto / medio / bajo).
+
+HISTORIAL RECIENTE (Para tu memoria):
+$historial
+PROMPT;
+
+        // 3️⃣ UNIÓN DE CONTEXTO WEB O CONOCIMIENTO GENERAL
+        if ($contextoWeb && mb_strlen($contextoWeb) > 200) {
+            $instrucciones = $baseInstrucciones . <<<PROMPT
+
+Además tienes resultados de búsqueda web. Úsalos como evidencia principal:
+- Menciona de forma natural los sitios de referencia.
+
+Al final de la respuesta, si ves URLs claras, añade una sección corta:
+Fuentes sugeridas:
+- URL 1
+
+Contexto web disponible:
 $contextoWeb
-
-Instrucciones IMPORTANTES:
-- Basa tu análisis PRINCIPALMENTE en este CONTEXTO_WEB, combinando con tu conocimiento general cuando sea útil.
-- NO empieces la respuesta con frases como "No lo sé", "No lo sé con seguridad" o "No tengo información".
-- Si la evidencia es limitada, explícalo en la sección 3) Riesgos / Incertidumbres y ajusta el nivel_de_confianza, pero siempre da tu mejor análisis.
-- Cuando veas URLs, identifica el dominio como posible fuente (ej: who.int, banrep.gov.co, oecd.org, minsalud.gov.co) y puedes mencionarlo como referencia.
-- No inventes enlaces que no aparezcan en el contexto, pero sí puedes sugerir tipos de fuentes (institutos oficiales, bancos centrales, etc.).
-
-Devuelve SIEMPRE en este formato de 4 bloques:
-
-1) Conclusión
-2) Evidencia  (usa viñetas si es útil; referencia dominios de las fuentes)
-3) Riesgos / Incertidumbres (explica qué datos faltan o son débiles)
-4) Nivel_de_confianza (alto / medio / bajo)
 PROMPT;
         } else {
-            // 🧠 Modo: conocimiento general (sin web fiable)
-            $prompt = <<<PROMPT
-Eres 2DayMind, un asesor cognitivo crítico y riguroso.
+            $instrucciones = $baseInstrucciones . <<<PROMPT
 
-Contexto del usuario:
-- País: $pais
-- Ciudad: {$ciudad}
-- Sector: $sector
-
-No tienes resultados web fiables para esta pregunta en este momento,
-pero sí tu conocimiento general entrenado (hasta 2024).
-
-Instrucciones IMPORTANTES:
-- NO uses frases como "No lo sé con seguridad", "no puedo responder" o similares.
-- Da SIEMPRE un análisis útil y estructurado, aunque aclares las limitaciones.
-- Cuando la pregunta sea sobre futuro o proyecciones, presenta al menos dos escenarios
-  (por ejemplo: escenario base y escenario de riesgo) y qué condiciones los disparan.
-- Incluye SIEMPRE:
-  * al menos 3 factores clave que influyen en el tema;
-  * al menos 2 recomendaciones prácticas o preguntas que la persona debería hacerse.
-- Sé honesto sobre las incertidumbres: explícales en la sección 3) Riesgos / Incertidumbres.
-- Puedes sugerir qué tipos de fuentes revisar (banco central, ministerio, regulador, universidades),
-  pero SIN inventar URLs concretas.
-
-Devuelve SIEMPRE en este formato de 4 bloques:
-
-1) Conclusión
-2) Evidencia (basada en conocimiento general)
-3) Riesgos / Incertidumbres
-4) Nivel_de_confianza (alto / medio / bajo)
+No tienes resultados de búsqueda web útiles. Responde usando SOLO tu conocimiento general entrenado, aclarando cuando algo dependa de datos recientes.
 PROMPT;
         }
 
-        // 🚀 Llamada a la API de responses
-        $result = $client->responses()->create([
+        // 4️⃣ LLAMADA A LA API
+        $resultado = $client->responses()->create([
             'model'        => 'gpt-4o-mini',
             'input'        => $mensaje,
-            'instructions' => $prompt,
+            'instructions' => $instrucciones,
         ]);
 
-        $respuesta = $result->outputText ?? '⚠️ Sin respuesta.';
-
-        // Guardar en tu modelo cognitivo
-        guardarCognicion($mensaje, $respuesta);
-
-        // Para web / HTML, convertimos saltos de línea
-        return nl2br($respuesta);
+        $respuesta = $resultado->outputText ?? "Lo siento, no pude generar una respuesta útil.";
+        return $respuesta;
 
     } catch (\Throwable $e) {
         error_log('Error OpenAI: ' . $e->getMessage());

@@ -3,9 +3,9 @@
 
 # Ignorar archivos de entorno o seguridad
 .env
+.env.*
 .DS_Store
 
 # Archivos temporales
 /tmp/
 /logs/
-includes/.secrets.php

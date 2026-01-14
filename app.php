@@ -1,458 +1,213 @@
 <?php
+// 🛠️ ACTIVADOR DE ERRORES (Para evitar pantallas blancas)
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-session_start();
-require __DIR__ . '/includes/openai.php';
-
-$sector  = $_GET['sector'] ?? 'general';
-$nombre  = $_SESSION['nombre'] ?? 'Usuario';
-
-$sector_safe = htmlspecialchars($sector, ENT_QUOTES, 'UTF-8');
+// Conexión a la base de datos para asegurar que el sistema esté listo
+require_once 'includes/db.php';
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>2DayMind – Asistente Inteligente</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
-  <style>
-    :root {
-      --azul-oscuro: #0b1f2d;
-      --azul-profundo: #0e2c44;
-      --dorado-metal: #c9a227;
-      --azul-metal: #1f6f8b;
-      --texto-oscuro: #1f2933;
-      --gris-fondo: #f4f6fb;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background: var(--gris-fondo);
-      color: var(--texto-oscuro);
-      font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .page {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 24px 12px 96px; /* espacio para la barra inferior */
-    }
-
-    .header {
-      width: 100%;
-      max-width: 960px;
-      text-align: center;
-      margin-bottom: 12px;
-    }
-
-    .header h2 {
-      margin: 0 0 6px;
-      font-weight: 700;
-      font-size: 1.6rem;
-      background: linear-gradient(90deg, var(--azul-profundo), var(--dorado-metal));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .header p {
-      margin: 0;
-      font-size: 0.95rem;
-      color: #4b5563;
-    }
-
-    .sector-badge {
-      display: inline-block;
-      margin-top: 8px;
-      background: var(--dorado-metal);
-      color: #0b1f2d;
-      font-weight: 700;
-      border-radius: 999px;
-      padding: 4px 16px;
-      box-shadow: 0 0 10px rgba(201,162,39,0.4);
-      font-size: 0.85rem;
-      letter-spacing: 0.04em;
-    }
-
-    /* Contenedor principal del chat */
-    .chat-container {
-      width: 100%;
-      max-width: 960px;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      margin-top: 12px;
-    }
-
-    #chatBox {
-      flex: 1;
-      background: #ffffff;
-      border-radius: 18px;
-      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
-      padding: 18px 18px 12px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .bubble {
-      max-width: 80%;
-      padding: 10px 14px;
-      border-radius: 14px;
-      font-size: 0.95rem;
-      line-height: 1.4;
-      box-shadow: 0 2px 6px rgba(15,23,42,0.08);
-      animation: fadeIn 0.18s ease-out;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    .bubble.user {
-      align-self: flex-end;
-      background: linear-gradient(135deg, var(--azul-metal), #2196f3);
-      color: #ffffff;
-    }
-
-    .bubble.bot {
-      align-self: flex-start;
-      background: #fff8e3;
-      border: 1px solid rgba(201,162,39,0.35);
-      color: #1f2933;
-    }
-
-    .bubble.bot strong.label {
-      display: block;
-      margin-bottom: 4px;
-      color: var(--azul-profundo);
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to   { opacity: 1; transform: translateY(0);   }
-    }
-
-    /* Sugerencias dentro del chat */
-    #suggestionsPanel {
-      margin-bottom: 6px;
-    }
-
-    .suggestion-title {
-      font-size: 0.85rem;
-      color: #6b7280;
-      margin-bottom: 6px;
-    }
-
-    .suggestion-pill {
-      display: inline-block;
-      margin: 3px 4px 4px 0;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(15,23,42,0.08);
-      background: #f9fafb;
-      font-size: 0.8rem;
-      cursor: pointer;
-      color: #374151;
-      transition: all 0.15s ease;
-    }
-
-    .suggestion-pill:hover {
-      background: #e5edf9;
-      border-color: var(--azul-metal);
-      color: var(--azul-profundo);
-      transform: translateY(-1px);
-    }
-
-    /* Barra inferior fija */
-    .input-bar-wrapper {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(244,246,251,0.96);
-      backdrop-filter: blur(8px);
-      border-top: 1px solid rgba(148,163,184,0.35);
-      padding: 10px 12px;
-      display: flex;
-      justify-content: center;
-      z-index: 20;
-    }
-
-    .input-bar {
-      width: 100%;
-      max-width: 960px;
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .input-bar input[type="text"] {
-      flex: 1;
-      border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.8);
-      padding: 10px 16px;
-      font-size: 1rem;
-      background: #ffffff;
-      color: #111827;
-      box-shadow: 0 3px 8px rgba(15, 23, 42, 0.08);
-    }
-
-    .input-bar input[type="text"]:focus {
-      outline: none;
-      border-color: var(--azul-metal);
-      box-shadow: 0 0 0 2px rgba(31,111,139,0.25);
-    }
-
-    .input-bar button {
-      border-radius: 999px;
-      border: none;
-      padding: 10px 20px;
-      font-weight: 600;
-      font-size: 0.95rem;
-      background: linear-gradient(135deg, var(--dorado-metal), #f5c84b);
-      color: #0b1f2d;
-      box-shadow: 0 4px 12px rgba(201,162,39,0.55);
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-
-    .input-bar button:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 18px rgba(201,162,39,0.75);
-    }
-
-    .input-bar button:active {
-      transform: translateY(0);
-      box-shadow: 0 2px 8px rgba(55,65,81,0.4);
-    }
-
-    .nav-links {
-      width: 100%;
-      max-width: 960px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 10px;
-      font-size: 0.85rem;
-      color: #6b7280;
-    }
-
-    .nav-links a {
-      color: var(--azul-metal);
-      text-decoration: none;
-    }
-
-    .nav-links a:hover {
-      text-decoration: underline;
-    }
-
-    @media (max-width: 768px) {
-      .bubble {
-        max-width: 100%;
-      }
-      .input-bar button span.text {
-        display: none; /* solo ícono en móviles si quieres */
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>2DayMind | Xavier AI Pro Global</title>
+    <style>
+        /* Estilos corporativos de Mariana */
+        :root { 
+            --white-elegant: #F0F4F9; --dark-blue: #002D5A; 
+            --bright-blue: #007BFF; --yellow: #FFCC00;
+            --text-main: #1f1f1f; --border: #dde3ea;
+        }
+        body { margin: 0; height: 100vh; background: var(--white-elegant); color: var(--text-main); font-family: sans-serif; display: flex; overflow: hidden; }
+        #avatar-container { flex: 1; position: relative; background: #fff; }
+        #avatar-canvas { width: 100%; height: 100%; }
+        #chat-panel { width: 420px; background: #FFFFFF; display: flex; flex-direction: column; border-left: 1px solid var(--border); z-index: 20; }
+        .panel-header { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        #messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+        .msg { padding: 12px 16px; font-size: 14.5px; line-height: 1.6; max-width: 90%; border-radius: 12px; }
+        .bot { background: #f1f8ff; align-self: flex-start; }
+        .user { background: #e3e3e3; align-self: flex-end; }
+        #input-area-container { padding: 15px 20px 30px; background: #fff; }
+        #input-area { display: flex; align-items: center; background: var(--white-elegant); border-radius: 28px; padding: 5px 15px; gap: 10px; }
+        input[type="text"] { flex: 1; border: none; outline: none; background: transparent; padding: 10px; font-size: 15px; }
+        .icon-btn { background: transparent; border: none; cursor: pointer; font-size: 20px; color: var(--dark-blue); transition: 0.3s; }
+        .recording { color: #d93025 !important; transform: scale(1.2); } /* Feedback visual para el micro */
+        #doc-indicator { font-size: 11px; color: var(--bright-blue); padding: 5px 20px; display: none; font-weight: bold; }
+    </style>
+    <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
+    </script>
 </head>
 <body>
-  <div class="page">
-    <div class="header">
-      <h2>💡 2DayMind – Asistente Inteligente</h2>
-      <p>Tu asesor especializado en el sector:</p>
-      <span class="sector-badge"><?= strtoupper($sector_safe) ?></span>
+
+<div id="avatar-container">
+    <div id="avatar-canvas"></div>
+    <div id="overlay" style="position:absolute; top:0; width:100%; height:100%; background:#fff; z-index:100; display:flex; justify-content:center; align-items:center; flex-direction:column;">
+        <h2 style="color:var(--dark-blue);">Xavier AI Pro</h2>
+        <button onclick="start()" style="padding:15px 50px; background:var(--dark-blue); color:#fff; border:none; border-radius:30px; cursor:pointer; font-weight:bold;">CONECTAR SISTEMA</button>
     </div>
+</div>
 
-    <div class="chat-container">
-      <div id="chatBox">
-        <!-- Panel de sugerencias iniciales -->
-        <div id="suggestionsPanel"></div>
-      </div>
-
-      <div class="nav-links">
-        <a href="index.php">⬅ Volver a sectores</a>
-        <a href="bienvenida.php">🏠 Inicio</a>
-        <a href="https://www.2daymind.com" target="_blank">🌐 Sitio oficial</a>
-      </div>
+<div id="chat-panel">
+    <div class="panel-header">
+        <div class="header-title">Xavier AI</div>
+        <select id="lang-select" class="lang-selector">
+            <option value="auto">🌐 Auto-detectar</option>
+            <option value="es">Español</option>
+            <option value="en">English</option>
+        </select>
     </div>
-  </div>
+    <div id="messages">
+        <div class="msg bot">Hola Mariana, soy Xavier. Mi micrófono está listo para dictados largos y puedo leer tus PDFs.</div>
+    </div>
+    <div id="doc-indicator">📄 PDF cargado y procesado</div>
+    <div id="input-area-container">
+        <div id="input-area">
+            <button class="icon-btn" title="Adjuntar PDF" onclick="document.getElementById('file-input').click()">📎</button>
+            <input type="file" id="file-input" hidden accept=".pdf" onchange="subirArchivo()">
+            
+            <input type="text" id="user-input" placeholder="Hablemos o escribe..." onkeypress="if(event.key==='Enter') enviar()">
+            
+            <button id="mic-btn" class="icon-btn" title="Micrófono" onclick="toggleDictado()">🎤</button>
+            <button class="icon-btn" onclick="enviar()" style="color:var(--bright-blue)">➤</button>
+        </div>
+    </div>
+</div>
 
-  <!-- Barra de entrada fija abajo -->
-  <div class="input-bar-wrapper">
-    <form id="chatForm" class="input-bar" action="./api/analizar.php?sector=<?= urlencode($sector) ?>" method="POST">
-      <input id="mensaje" name="mensaje" type="text" autocomplete="off"
-             placeholder="Escribe tu pregunta aquí…">
-      <button type="submit">
-        <span class="text">Enviar</span> 🚀
-      </button>
-    </form>
-  </div>
+<script type="module">
+    import { TalkingHead } from "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.1/modules/talkinghead.mjs?v=1";
+    let head; 
+    let textoDocumento = "";
 
-  <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const form   = document.getElementById('chatForm');
-    const box    = document.getElementById('chatBox');
-    const input  = document.getElementById('mensaje');
-    const suggEl = document.getElementById('suggestionsPanel');
+    // 🆔 IDENTIDAD ÚNICA PARA LA MEMORIA PERMANENTE
+    let xavierId = localStorage.getItem('xavier_id');
+    if (!xavierId) {
+        xavierId = 'USR-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        localStorage.setItem('xavier_id', xavierId);
+    }
 
-    if (!form || !box || !input) return;
+    // Inicializar Avatar (Ready Player Me)
+    window.start = async function() {
+        const node = document.getElementById('avatar-canvas');
+        head = new TalkingHead(node, {
+            cameraView: "upper",
+            ttsEndpoint: "api/tts.php", 
+            tts: async (text) => {
+                const res = await fetch("api/tts.php", { 
+                    method: "POST", 
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text }) 
+                });
+                return await (await res.blob()).arrayBuffer();
+            }
+        });
+        await head.showAvatar({ url: 'https://models.readyplayer.me/695c2eb90ca398caea3efe26.glb?morphTargets=ARKit', body: 'M' });
+        document.getElementById('overlay').style.display = 'none';
+    }
 
-    const sectorActual = "<?= strtolower($sector_safe) ?>";
+    // 🎙️ RECONOCIMIENTO DE VOZ (DISEÑADO PARA CUBRIR 3 MINUTOS)
+    const recognition = (window.SpeechRecognition || window.webkitSpeechRecognition) ? 
+        new (window.SpeechRecognition || window.webkitSpeechRecognition)() : null;
 
-    const sugerenciasPorSector = {
-      salud: [
-        "¿Cuáles son hoy los principales retos del sistema de salud en mi país?",
-        "¿Qué tecnologías están transformando el sector salud?",
-        "¿Qué riesgos éticos existen con el uso de IA en salud?",
-        "¿Qué indicadores básicos debería vigilar de un sistema de salud?"
-      ],
-      finanzas: [
-        "¿Qué riesgos económicos enfrenta Colombia en 2025 y qué tan confiables son esas estimaciones?",
-        "¿Qué debo revisar antes de invertir en un fondo de inversión?",
-        "¿Cómo afecta la inflación a mis ahorros?",
-        "¿Qué señales alertan de una posible crisis financiera?"
-      ],
-      tecnologia: [
-        "¿Qué tecnologías emergentes tendrán más impacto en los próximos 5 años?",
-        "¿Qué riesgos de ciberseguridad son más críticos para una pyme?",
-        "¿Qué buenas prácticas recomiendas para usar IA de forma responsable?",
-        "¿Cómo evaluar la confiabilidad de una fuente tecnológica en línea?"
-      ],
-      general: [
-        "¿Qué preguntas clave debería hacer antes de tomar una decisión importante?",
-        "¿Cómo puedo evaluar si una noticia en internet es confiable?",
-        "¿Qué sesgos cognitivos afectan más a los líderes al decidir?",
-        "¿Cómo estructurar pros y contras de una decisión compleja?"
-      ]
+    if (recognition) {
+        recognition.continuous = true; // No se corta al dejar de hablar un segundo
+        recognition.interimResults = true; // Muestra resultados en tiempo real
+
+        recognition.onresult = (e) => {
+            let transcript = '';
+            for (let i = e.resultIndex; i < e.results.length; ++i) {
+                transcript += e.results[i][0].transcript;
+            }
+            document.getElementById('user-input').value = transcript;
+        };
+
+        recognition.onend = () => {
+            const btn = document.getElementById('mic-btn');
+            if (btn.classList.contains('recording')) {
+                recognition.start(); // Reinicio automático para asegurar los 3 minutos
+            }
+        };
+    }
+
+    window.toggleDictado = () => {
+        const btn = document.getElementById('mic-btn');
+        if (!btn.classList.contains('recording')) {
+            btn.classList.add('recording');
+            recognition.lang = document.getElementById('lang-select').value === 'en' ? 'en-US' : 'es-ES';
+            recognition.start();
+        } else {
+            btn.classList.remove('recording');
+            recognition.stop();
+        }
     };
 
-    const sugerencias = sugerenciasPorSector[sectorActual] || sugerenciasPorSector.general;
+    // 📄 SUBIR Y LEER CONTENIDO DE PDF
+    window.subirArchivo = async function() {
+        const indicator = document.getElementById('doc-indicator');
+        const file = document.getElementById('file-input').files[0];
+        if (!file) return;
 
-    function renderSugerencias() {
-      if (!suggEl) return;
-      let html = '<div class="suggestion-title">Sugerencias para empezar:</div>';
-      for (const q of sugerencias) {
-        html += `<span class="suggestion-pill">${q}</span>`;
-      }
-      suggEl.innerHTML = html;
+        indicator.innerText = "⏳ Leyendo PDF...";
+        indicator.style.display = 'block';
 
-      suggEl.querySelectorAll('.suggestion-pill').forEach(btn => {
-        btn.addEventListener('click', () => {
-          input.value = btn.textContent;
-          form.requestSubmit();
-        });
-      });
-    }
+        const formData = new FormData();
+        formData.append('documento', file);
 
-    renderSugerencias();
-
-    // Opcional: reset de memoria cognitiva al cargar
-    fetch('./api/analizar.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: 'reset=true'
-    }).catch(() => {});
-
-    async function obtenerUbicacion() {
-      try {
-        const res = await fetch("https://ipapi.co/json/");
-        const data = await res.json();
-        sessionStorage.setItem("paisUsuario", data.country_name || "Global");
-        sessionStorage.setItem("ciudadUsuario", data.city || "");
-      } catch (err) {
-        console.warn("No se pudo obtener la ubicación:", err);
-      }
-    }
-    obtenerUbicacion();
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const msg = input.value.trim();
-      if (!msg) return;
-
-      const pais   = sessionStorage.getItem("paisUsuario")   || "Global";
-      const ciudad = sessionStorage.getItem("ciudadUsuario") || "";
-
-      // Ocultar sugerencias al primer mensaje (si quieres)
-      if (suggEl) suggEl.style.display = 'none';
-
-      // Burbuja usuario
-      box.insertAdjacentHTML('beforeend',
-        `<div class="bubble user"><strong>Tú:</strong> ${msg}</div>`
-      );
-      box.scrollTop = box.scrollHeight;
-      input.value = '';
-
-      // Burbuja “pensando…”
-      const thinkingId = 'thinking-' + Date.now();
-      box.insertAdjacentHTML('beforeend',
-        `<div class="bubble bot" id="${thinkingId}">
-           <strong class="label">2DayMind:</strong>
-           Estoy analizando tu pregunta con información reciente y fuentes confiables… ⏳
-         </div>`
-      );
-      box.scrollTop = box.scrollHeight;
-
-      try {
-        const res = await fetch(form.action, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            mensaje: msg,
-            pais: pais,
-            ciudad: ciudad
-          })
-        });
-
-        const raw = await res.text();
-        let data = null;
-        try { data = JSON.parse(raw); } catch (_) {}
-
-        const thinkingEl = document.getElementById(thinkingId);
-        if (thinkingEl) thinkingEl.remove();
-
-        let texto;
-        if (data && typeof data === 'object' && 'respuesta' in data) {
-          texto = data.respuesta || '⚠️ Sin respuesta.';
-        } else {
-          texto = raw || '⚠️ Sin respuesta.';
+        try {
+            const res = await fetch('api/upload.php', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.ok) {
+                textoDocumento = data.texto; // Aquí se guarda lo que Xavier leyó
+                indicator.innerText = "✅ PDF cargado y analizado";
+            } else {
+                indicator.innerText = "❌ Error: " + data.error;
+            }
+        } catch (e) {
+            indicator.innerText = "❌ Error de conexión al leer PDF";
         }
+    }
 
-        box.insertAdjacentHTML('beforeend',
-          `<div class="bubble bot">
-             <strong class="label">2DayMind:</strong>
-             ${texto}
-           </div>`
-        );
-      } catch (err) {
-        const thinkingEl = document.getElementById(thinkingId);
-        if (thinkingEl) thinkingEl.remove();
+    // 🚀 ENVÍO CON MEMORIA E IDENTIDAD
+    window.enviar = async function() {
+        const input = document.getElementById('user-input');
+        const txt = input.value.trim();
+        if (!txt) return;
 
-        box.insertAdjacentHTML('beforeend',
-          `<div class="bubble bot">
-             <strong class="label">2DayMind:</strong>
-             ❌ No pude conectarme al servidor. Intenta de nuevo en un momento.
-           </div>`
-        );
-      }
+        // Mostrar mensaje en burbuja
+        const msgs = document.getElementById('messages');
+        msgs.innerHTML += `<div class="msg user">${txt}</div>`;
+        input.value = '';
+        msgs.scrollTop = msgs.scrollHeight;
 
-      box.scrollTop = box.scrollHeight;
-    });
-  });
-  </script>
+        const formData = new FormData();
+        
+        // Unir el texto del PDF con la pregunta del usuario
+        const mensajeFinal = textoDocumento 
+            ? `[MEMORIA DE DOCUMENTO: ${textoDocumento}] Pregunta: ${txt}` 
+            : txt;
+
+        formData.append('mensaje', mensajeFinal);
+        formData.append('idioma_preferido', document.getElementById('lang-select').value);
+        formData.append('user_id', xavierId); // <--- IDENTIFICACIÓN PERMANENTE
+
+        try {
+            const res = await fetch('api/analizar.php?sector=salud', { method: 'POST', body: formData });
+            const data = await res.json();
+            
+            msgs.innerHTML += `<div class="msg bot">${data.respuesta}</div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+            
+            if (head) head.speakText(data.respuesta);
+            
+            // Limpiar memoria temporal del PDF tras la respuesta para no saturar
+            textoDocumento = ""; 
+            document.getElementById('doc-indicator').style.display = 'none';
+
+        } catch (e) {
+            console.error("Error en Xavier:", e);
+        }
+    }
+</script>
 </body>
 </html>
